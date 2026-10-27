@@ -374,7 +374,19 @@ void AuthScreen::render(auth::AuthHandler& authHandler) {
     if (sheetWasOpen) ui_.popInert();
 
     if (connectionOptionsOpen_) {
+        // PaperUI's overlay is ImGui's foreground draw list, which is painted
+        // after normal windows.  The Switch text keyboard is an ImGui modal,
+        // so leaving this sheet on the overlay while the keyboard is open
+        // hides the keyboard behind it.  Keep rendering the sheet (the field
+        // must retain focus and continue supplying its text hint), but put it
+        // on the page layer until the keyboard closes.
+#ifdef WOWEE_SWITCH
+        ui_.setLayer(platform::switchport::keyboardOpen()
+                         ? PaperLayer::Page
+                         : PaperLayer::Overlay);
+#else
         ui_.setLayer(PaperLayer::Overlay);
+#endif
         ui_.scrim(.55f);
         renderConnectionPanel(authHandler, screen.x, screen.y);
         const float x = screen.x * .5f + ui_.px(kCardWidth * .5f - 22);
