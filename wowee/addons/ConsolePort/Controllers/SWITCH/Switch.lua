@@ -122,7 +122,7 @@ db.Controllers.SWITCH = {
 		},
 		-- D-Pad
 		['CP_L_UP'] = {
-			['']		 	= 'MULTIACTIONBAR1BUTTON12',
+			['']		 	= 'ACTIONBUTTON2', -- starting secondary spell
 			['SHIFT-'] 		= 'MULTIACTIONBAR2BUTTON2',
 			['CTRL-'] 		= 'MULTIACTIONBAR2BUTTON6',
 			['CTRL-SHIFT-'] = 'MULTIACTIONBAR2BUTTON10',
@@ -134,7 +134,7 @@ db.Controllers.SWITCH = {
 			['CTRL-SHIFT-']	= 'MULTIACTIONBAR2BUTTON12',
 		},
 		['CP_L_LEFT'] = {
-			['']		 	= 'MULTIACTIONBAR1BUTTON11',
+			['']		 	= 'ACTIONBUTTON3', -- starting utility/racial spell
 			['SHIFT-'] 		= 'MULTIACTIONBAR2BUTTON1',
 			['CTRL-'] 		= 'MULTIACTIONBAR2BUTTON5',
 			['CTRL-SHIFT-'] = 'MULTIACTIONBAR2BUTTON9',

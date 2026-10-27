@@ -4916,11 +4916,9 @@ void Application::render() {
     platform::switchport::setInputMenuNavigation(
         platform::switchport::MenuOwner::FrameXml, drawWidgets && localFrameXml_.panelOpen());
 
-    // The in-world crosshair (remote realm only). While it is up the pad layer
-    // pins the cursor to the screen centre and turns A into the world's own
-    // right click, Y into its left click and L1 into target-nearest-attackable
-    // - the client's real interact/loot/attack pick, driven from the middle of
-    // the screen rather than from a search. Every gate below is a reason the
+    // Remote in-world combat mode pins the hidden cursor to the screen centre,
+    // keeps A/Y on their ConsolePort actions, and reserves L1 for
+    // target-nearest-attackable. Every gate below is a reason the
     // player is doing something other than standing in the world: the local
     // realm keeps its overlay gestures untouched, a menu or the world map owns
     // the pad, R3 has handed the right stick back to the cursor, or a cinematic

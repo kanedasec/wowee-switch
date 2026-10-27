@@ -963,11 +963,16 @@ uint32_t currencyListItemId(lua_State* L, int index) {
     return rows[static_cast<size_t>(index) - 1].itemId;
 }
 
+static uint32_t carriedItemMatching(game::GameHandler* gh, lua_State* L, int arg);
+
 static int lua_GetItemCount(lua_State* L) {
     auto* gh = getGameHandler(L);
     if (!gh) { return luaReturnZero(L); }
-    const uint32_t itemId = static_cast<uint32_t>(luaL_checknumber(L, 1));
-    lua_pushnumber(L, gh->getInventory().countItem(itemId));
+    // The 3.3.5 API accepts an item id, link, or exact item name. ConsolePort
+    // intentionally passes the name stored on its utility button; requiring a
+    // number here made that normal call throw and stopped the button update.
+    const uint32_t itemId = carriedItemMatching(gh, L, 1);
+    lua_pushnumber(L, itemId ? countItemInBags(gh, itemId) : 0);
     return 1;
 }
 

@@ -249,6 +249,28 @@ function ConsolePort:LoadSettings()
 				ConsolePort:OnNewBindings(set)
 			end
 		end
+		-- WoWee handheld remap (rev 7): put the first three action-bar
+		-- abilities on Y, D-pad Up and D-pad Left. Down and Right deliberately
+		-- remain slots 11 and 12 for the Auto-Grind-Bot and Hearthstone.
+		if set and (ConsolePortBindingSet.woweeBindRev or 0) < 7 then
+			if type(set.CP_L_UP) == 'table' then
+				set.CP_L_UP[''] = 'ACTIONBUTTON2'
+			end
+			if type(set.CP_L_LEFT) == 'table' then
+				set.CP_L_LEFT[''] = 'ACTIONBUTTON3'
+			end
+			ConsolePortBindingSet.woweeBindRev = 7
+			db.Bindings = set
+			if ConsolePortButtonHandler and ClearOverrideBindings then
+				ClearOverrideBindings(ConsolePortButtonHandler)
+			end
+			if ConsolePort.LoadBindingSet then
+				ConsolePort:LoadBindingSet(set, true)
+			end
+			if ConsolePort.OnNewBindings then
+				ConsolePort:OnNewBindings(set)
+			end
+		end
 	end
 
 	-- The utility ring is built by SetupUtilityRing, which nothing on the

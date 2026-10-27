@@ -899,15 +899,13 @@ void pumpInput() {
                 }
             }
         }
-        // Face buttons -> F1..F4. With the crosshair up, Y and A are the world's
-        // own clicks rather than F3/F4 (handled just below the R3 toggle), so
-        // the two rows stand down: one press, one answer.
+        // Face buttons -> F1..F4. Remote combat keeps these ConsolePort keys
+        // active: Y casts its bound action and A runs INTERACTTARGET. World
+        // mouse clicks remain available explicitly through R3 cursor mode.
         if (gameplayButtons & ORBIS_PAD_BUTTON_SQUARE) want[static_cast<size_t>(SDL_SCANCODE_F1)] = true;   // X
         if (gameplayButtons & ORBIS_PAD_BUTTON_CIRCLE) want[static_cast<size_t>(SDL_SCANCODE_F2)] = true;   // B
-        if (!s_crosshairActive) {
-            if (gameplayButtons & ORBIS_PAD_BUTTON_TRIANGLE) want[static_cast<size_t>(SDL_SCANCODE_F3)] = true; // Y
-            if (gameplayButtons & ORBIS_PAD_BUTTON_CROSS) want[static_cast<size_t>(SDL_SCANCODE_F4)] = true;    // A
-        }
+        if (gameplayButtons & ORBIS_PAD_BUTTON_TRIANGLE) want[static_cast<size_t>(SDL_SCANCODE_F3)] = true; // Y
+        if (gameplayButtons & ORBIS_PAD_BUTTON_CROSS) want[static_cast<size_t>(SDL_SCANCODE_F4)] = true;    // A
 
         // D-Pad -> F5..F8
         if (gameplayButtons & ORBIS_PAD_BUTTON_UP) want[static_cast<size_t>(SDL_SCANCODE_F5)] = true;
@@ -940,16 +938,10 @@ void pumpInput() {
             if (gameplayButtons & ORBIS_PAD_BUTTON_CROSS) left = true;
             if (gameplayButtons & ORBIS_PAD_BUTTON_CIRCLE) right = true;
         }
-        // Crosshair up (remote realm, in world, no menu): the face buttons are
-        // the world's own clicks at the screen centre. A is the right click the
-        // client's real world pick answers - interact, loot or auto-attack on
-        // whatever the crosshair is on - and Y is the left click that selects or
-        // deselects. L1 asks the client for the nearest attackable unit. R3 and
-        // cursor mode are mutually exclusive with this (the client turns the
-        // crosshair off while R3 has the stick on the cursor).
+        // Remote combat mode reserves L1 for the client's nearest-attackable
+        // target cycle. A and Y continue through ConsolePort above, so casting
+        // cannot accidentally become a centre-screen click that drops target.
         if (s_crosshairActive) {
-            if (gameplayButtons & ORBIS_PAD_BUTTON_CROSS) right = true;
-            if (gameplayButtons & ORBIS_PAD_BUTTON_TRIANGLE) left = true;
             if (st.pressed & gameplayButtons & ORBIS_PAD_BUTTON_L1)
                 s_crosshairTargetRequest = true;
         }
@@ -961,10 +953,8 @@ void pumpInput() {
         // the bar. The tap still fires first - an extra interact on pickup
         // is harmless beside a drag that would otherwise be impossible.
         //
-        // Not while the crosshair is up: there A is the right click, and a
-        // simultaneous left click would be the wrong button and would stop the
-        // right click's tap test from ever firing. A is a clean right click
-        // then, and Y is the left one.
+        // Not in remote combat mode: there A belongs exclusively to its F4
+        // INTERACTTARGET binding. Use R3 cursor mode for bag dragging.
         if (!s_crosshairActive) {
             static bool s_crossWasHeld = false;
             static Clock::time_point s_crossDownSince{};

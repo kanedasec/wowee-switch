@@ -195,12 +195,10 @@ enum class MenuOwner : unsigned { LocalRealm = 1, Settings = 2, FrameXml = 4, Hu
 void setInputMenuNavigation(MenuOwner owner, bool open);
 bool inputMenuNavigation();
 
-/// The in-world crosshair, remote realm only. While it is up the pad layer pins
-/// the cursor to the screen centre and the face buttons become the world's own
-/// clicks - Cross a right click (interact / loot / auto-attack under the
-/// crosshair), Triangle a left click (select / deselect), L1 a request for the
-/// nearest attackable unit - instead of their ConsolePort F-keys. The client
-/// sets this once a frame; false is today's behaviour exactly. Never true on
+/// Remote in-world combat mode. While active it pins the hidden cursor to the
+/// screen centre and reserves L1 for nearest-attackable target cycling. Face
+/// buttons retain their ConsolePort F-keys (A interacts, Y casts); R3 cursor
+/// mode supplies explicit world and inventory mouse clicks. Never active on
 /// the local realm.
 void setCrosshairActive(bool active);
 bool crosshairActive();
