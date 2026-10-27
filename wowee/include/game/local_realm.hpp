@@ -69,6 +69,9 @@ public:
     bool setCharacterAppearance(uint8_t skin, uint8_t face, uint8_t hairStyle, uint8_t hairColor,
                                 uint8_t facialHair, bool useFemaleModel);
     bool setRealmName(const std::string& name);
+    /// Built-in realm reward and raid tuning. Call before start; defaults are
+    /// 1x rewards and 100% raid enemy strength.
+    bool setTuning(LocalRealmTuning tuning);
     /// Run playerbots on this realm. Must be set before it starts: the roster
     /// is built with the world, and bots that appeared mid-session would be
     /// characters nobody logged in.

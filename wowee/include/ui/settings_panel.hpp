@@ -160,6 +160,9 @@ public:
     bool pendingAutoLoot = true;
     bool pendingAutoSellGrey = false;
     bool pendingAutoRepair = false;
+    float pendingLocalExperienceRate = 1.0f;
+    float pendingLocalDropRate = 1.0f;
+    float pendingLocalRaidStrength = 1.0f;
     bool pendingIdleCameraOrbit = true;
 
     // ---- Pending soundtrack ----

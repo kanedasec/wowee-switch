@@ -1830,6 +1830,9 @@ void GameScreen::saveSettings() {
     out << "autoloot_default_version=" << kAutoLootDefaultVersion << "\n";
     out << "auto_sell_grey=" << (settingsPanel_.pendingAutoSellGrey ? 1 : 0) << "\n";
     out << "auto_repair=" << (settingsPanel_.pendingAutoRepair ? 1 : 0) << "\n";
+    out << "local_xp_rate=" << settingsPanel_.pendingLocalExperienceRate << "\n";
+    out << "local_drop_rate=" << settingsPanel_.pendingLocalDropRate << "\n";
+    out << "local_raid_strength=" << settingsPanel_.pendingLocalRaidStrength << "\n";
     out << "graphics_preset=" << static_cast<int>(settingsPanel_.currentGraphicsPreset) << "\n";
     out << "ground_clutter_density=" << settingsPanel_.pendingGroundClutterDensity << "\n";
     out << "grass_enabled=" << (settingsPanel_.pendingGrassEnabled ? 1 : 0) << "\n";
@@ -2096,6 +2099,9 @@ void GameScreen::loadSettings() {
             else if (key == "auto_loot") settingsPanel_.pendingAutoLoot = (std::stoi(val) != 0);
             else if (key == "auto_sell_grey") settingsPanel_.pendingAutoSellGrey = (std::stoi(val) != 0);
             else if (key == "auto_repair") settingsPanel_.pendingAutoRepair = (std::stoi(val) != 0);
+            else if (key == "local_xp_rate") settingsPanel_.pendingLocalExperienceRate = std::clamp(std::stof(val), 0.5f, 10.0f);
+            else if (key == "local_drop_rate") settingsPanel_.pendingLocalDropRate = std::clamp(std::stof(val), 1.0f, 10.0f);
+            else if (key == "local_raid_strength") settingsPanel_.pendingLocalRaidStrength = std::clamp(std::stof(val), 0.1f, 1.0f);
             else if (key == "graphics_preset") {
                 int presetVal = std::clamp(std::stoi(val), 0, 4);
                 settingsPanel_.currentGraphicsPreset = static_cast<SettingsPanel::GraphicsPreset>(presetVal);

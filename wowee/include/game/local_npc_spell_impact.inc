@@ -159,7 +159,7 @@
             event.outcome=outcome;event.attackType=LocalCombatAttackType::Magic;event.spellTypeMask=4;
             emitCombatEvent(event,players);return outcome;
         }
-        const uint32_t raw=rawOverride>=0?uint32_t(std::min<int64_t>(1000000,rawOverride)):uint32_t(std::min<float>(1000000.f,float(npcSpellRawDamage(n,d))*std::max(0.f,damageMultiplier)));
+        const uint32_t raw=raidScaled(n.mapId,rawOverride>=0?uint32_t(std::min<int64_t>(1000000,rawOverride)):uint32_t(std::min<float>(1000000.f,float(npcSpellRawDamage(n,d))*std::max(0.f,damageMultiplier))));
         const uint32_t attempted=localFormDamage(target,npcDamageTakenByPlayer(target,localIncomingDamageAfterTalents(target,*content,raw),d.schoolMask),true);
         const uint32_t damage=localAbsorbDamage(target,*content,attempted,d.schoolMask);
         stats(target,*content,false);
@@ -245,7 +245,7 @@
             else {w+=bonus;w=int64_t(int32_t(float(w)*percent));}
             raw=uint32_t(std::clamp<int64_t>(w,0,1000000));
         } else raw=npcSpellRawDamage(n,d);
-        raw=uint32_t(std::min<float>(1000000.f,float(raw)*std::max(0.f,damageMultiplier)));
+        raw=raidScaled(n.mapId,uint32_t(std::min<float>(1000000.f,float(raw)*std::max(0.f,damageMultiplier))));
         const bool physical=(d.schoolMask&1u)!=0;
         uint32_t reduced=npcDamageTakenByPlayer(target,localIncomingDamageAfterTalents(target,*content,raw),d.schoolMask?d.schoolMask:1u);
         if(physical&&!d.directIgnoresArmor)reduced=localArmorReducedDamage(reduced,localMeleeArmor(target,*content),n.level);

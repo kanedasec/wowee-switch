@@ -419,6 +419,15 @@ constexpr SettingDesc kSchema[] = {
      "Sell your grey items whenever you open a merchant.", "", 0},
     {"autorepair", "Repair at vendors", SettingKind::Bool, 0, 0, 0, "Gameplay", "",
      "Repair whenever you open a merchant who can.", "", 0},
+    {"localxprate", "XP rate", SettingKind::Float, 0.5f, 10.0f, 0.5f,
+     "Gameplay", "Single Player",
+     "Kill and quest experience in the built-in realm.\nApplies the next time Single Player starts.", "", 1.0f},
+    {"localdroprate", "Drop rate", SettingKind::Float, 1.0f, 10.0f, 0.5f,
+     "Gameplay", "",
+     "Multiplies guaranteed item quantities in the built-in realm.\nIt never removes quest items. Applies on the next start.", "", 1.0f},
+    {"localraidstrength", "Raid enemy strength", SettingKind::Float, 0.1f, 1.0f, 0.1f,
+     "Gameplay", "",
+     "Scales raid-enemy health and outgoing damage.\nTry 0.2 for solo play. Applies on the next start.", "", 1.0f},
 };
 
 }  // namespace

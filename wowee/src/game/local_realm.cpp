@@ -4661,6 +4661,16 @@ void LocalRealm::setPlayerbots(bool enabled, size_t count) {
     // realm id to seed from and no character to gather around; see the tick.
 }
 
+bool LocalRealm::setTuning(LocalRealmTuning tuning) {
+    if (!impl_ || impl_->state != LocalRealmState::Stopped || !impl_->gameplay.setTuning(tuning)) {
+        if (impl_) impl_->error = "Invalid local realm tuning, or the realm has already started";
+        return false;
+    }
+    LOG_INFO("[LOCAL_TUNING] xp=", tuning.experienceRate, " drop=", tuning.dropRate,
+             " raid_strength=", tuning.raidEnemyStrength);
+    return true;
+}
+
 bool LocalRealm::playerbotsEnabled() const {
     return impl_ && impl_->botDirector.enabled();
 }

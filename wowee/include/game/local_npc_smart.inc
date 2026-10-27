@@ -2081,7 +2081,8 @@
     /// (Unit::DealDamage straight: neither taken bonus nor absorb).
     void npcAuraDamage(LocalRealmNpc& n,LocalRealmPlayer& target,uint32_t spellId,uint32_t schoolMask,uint32_t raw,const std::vector<LocalRealmPlayer*>& players,bool shield) {
         if(target.dead||!target.health||!raw||target.mapId!=n.mapId||target.instanceId!=n.instanceId)return;
-        const uint32_t attempted=shield?std::min(raw,1000000u):localFormDamage(target,npcDamageTakenByPlayer(target,localIncomingDamageAfterTalents(target,*content,std::min(raw,1000000u)),schoolMask),true);
+        raw=raidScaled(n.mapId,std::min(raw,1000000u));
+        const uint32_t attempted=shield?raw:localFormDamage(target,npcDamageTakenByPlayer(target,localIncomingDamageAfterTalents(target,*content,raw),schoolMask),true);
         const uint32_t damage=shield?attempted:localAbsorbDamage(target,*content,attempted,schoolMask);
         stats(target,*content,false);
         const uint32_t effective=std::min(damage,target.health);

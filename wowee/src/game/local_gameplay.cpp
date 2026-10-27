@@ -617,6 +617,19 @@ std::vector<LocalQuestDefinition> LocalWorldContent::questsForNpc(uint32_t entry
 
 struct LocalGameplay::Impl {
     LocalCombatHistory combatHistory;
+    LocalRealmTuning tuning;
+    static uint32_t scaled(uint32_t value, float multiplier) {
+        if (!value) return 0;
+        return uint32_t(std::clamp<long double>(std::llround(static_cast<long double>(value) * multiplier),
+                                                1, std::numeric_limits<uint32_t>::max()));
+    }
+    bool raidMap(uint32_t mapId) const {
+        const auto* map = definition(maps, mapId);
+        return map && map->instanceType == 2;
+    }
+    uint32_t raidScaled(uint32_t mapId, uint32_t value) const {
+        return raidMap(mapId) ? scaled(value, tuning.raidEnemyStrength) : value;
+    }
     /// P05 line of sight . Empty unless the player installed a pack.
     LocalCollisionData collision;
     std::function<std::vector<LocalRealmPlayer*>()> auraOwnerProvider;
@@ -1020,7 +1033,7 @@ struct LocalGameplay::Impl {
             for(size_t i=0;i<n.vehicleSeatCount;++i)n.vehicleAim[i][1]=std::clamp(0.f,kit->minPitch,kit->maxPitch);
         }
         n.mapId=s.mapId;n.x=n.homeX=n.spawnX=s.x;n.y=n.homeY=n.spawnY=s.y;n.z=n.homeZ=n.spawnZ=s.z;n.orientation=n.spawnOrientation=s.orientation;
-        n.level=d.level;n.health=n.maxHealth=d.health;n.hostile=d.hostile;n.questGiver=d.questGiver;
+        n.level=d.level;n.health=n.maxHealth=d.hostile?raidScaled(n.mapId,d.health):d.health;n.hostile=d.hostile;n.questGiver=d.questGiver;
         applyNpcServiceFlags(n,d,npcBaseFlags(d),false);
         n.combatEpoch=epoch;
         // 2.39 Creature::LoadFromDB -> the default movement generator: random
@@ -1403,11 +1416,12 @@ struct LocalGameplay::Impl {
         // deterministic remainder allocation conserves it exactly. It does not
         // claim retail level scaling, gray-mob penalties or group multipliers.
         const size_t xpCount=std::count_if(plan.eligible.begin(),plan.eligible.end(),[](auto* p){return p->level<80;});
-        uint32_t remainder=xpCount?def->xp%uint32_t(xpCount):0;
+        const uint32_t xpBudget=scaled(def->xp,tuning.experienceRate);
+        uint32_t remainder=xpCount?xpBudget%uint32_t(xpCount):0;
         plan.rewards.reserve(plan.eligible.size());
         for(const auto* p:plan.eligible) {
             uint32_t reward=0;
-            if(p->level<80 && xpCount){reward=def->xp/uint32_t(xpCount);if(remainder){++reward;--remainder;}}
+            if(p->level<80 && xpCount){reward=xpBudget/uint32_t(xpCount);if(remainder){++reward;--remainder;}}
             plan.rewards.push_back(reward);
         }
         // Only adjacent equal facts are run-length encoded. Thus A,B,A stays
@@ -2314,6 +2328,15 @@ struct LocalGameplay::Impl {
 };
 
 LocalGameplay::LocalGameplay():impl_(std::make_unique<Impl>()){}
+bool LocalGameplay::setTuning(LocalRealmTuning tuning) {
+    if (!std::isfinite(tuning.experienceRate) || tuning.experienceRate < 0.5f || tuning.experienceRate > 10.0f ||
+        !std::isfinite(tuning.dropRate) || tuning.dropRate < 1.0f || tuning.dropRate > 10.0f ||
+        !std::isfinite(tuning.raidEnemyStrength) || tuning.raidEnemyStrength < 0.1f || tuning.raidEnemyStrength > 1.0f)
+        return false;
+    impl_->tuning = tuning;
+    return true;
+}
+LocalRealmTuning LocalGameplay::tuning() const { return impl_->tuning; }
 // Tests only: also makes the combat rolls (hit, chance, damage dice) reproducible.
 void LocalGameplay::seedGameObjectRandom(uint32_t seed){impl_->objectRandom.seed(seed);impl_->talkRandom.seed(seed^0x9e3779b9u);impl_->meleeRandom.seed(seed^0x85ebca6bu);}
 LocalGameplay::~LocalGameplay()=default;
@@ -4304,14 +4327,14 @@ bool LocalGameplay::executeUnsettled(LocalRealmPlayer& p,const LocalRealmCommand
         auto staged=p;
         auto next=shared?*shared:LocalGameObjectState{};
         if(object->kind==LocalGameObjectKind::Chest || object->kind==LocalGameObjectKind::Resource) {
-            for(const auto& item:object->loot)if(!addItem(staged,c,item.itemId,item.count))return reject("Inventory full; nothing was collected");
+            for(const auto& item:object->loot)if(!addItem(staged,c,item.itemId,Impl::scaled(item.count,impl_->tuning.dropRate)))return reject("Inventory full; nothing was collected");
             if(!object->lootTable.empty()) {
                 // One authority roll per use. Rejection below discards the
                 // staged character, so a full bag never consumes the node.
                 const auto rolled=localRollGameObjectLoot(object->lootTable,g.objectRandom,[&](uint32_t itemId){
                     return localPlayerNeedsQuestItem(p,c,itemId);
                 });
-                for(const auto& item:rolled)if(!addItem(staged,c,item.itemId,item.count))return reject("Inventory full; nothing was collected");
+                for(const auto& item:rolled)if(!addItem(staged,c,item.itemId,Impl::scaled(item.count,impl_->tuning.dropRate)))return reject("Inventory full; nothing was collected");
             }
             if(uint64_t(staged.money)+object->money>1000000000ULL)return reject("Money limit; nothing was collected");
             staged.money+=object->money;
@@ -5297,7 +5320,7 @@ bool LocalGameplay::executeUnsettled(LocalRealmPlayer& p,const LocalRealmCommand
         if(!n->dead||!n->lootable)return reject("Nothing to loot");
         if(n->lootOwner!=p.guid)return reject("Loot is reserved for another player");
         const auto* def=c.npc(n->entry);if(!def)return reject("Missing loot definition");
-        auto candidate=p;for(const auto& s:def->loot)if(!addItem(candidate,c,s.itemId,s.count))return reject("Inventory full; free space before looting");
+        auto candidate=p;for(const auto& s:def->loot)if(!addItem(candidate,c,s.itemId,Impl::scaled(s.count,impl_->tuning.dropRate)))return reject("Inventory full; free space before looting");
         // Money is shared with the original death-time cohort, filtered again
         // for online/living/same-instance proximity at collection. Items remain
         // with the assigned looter. Late joiners never gain old corpse rights.
@@ -5413,7 +5436,7 @@ bool LocalGameplay::executeUnsettled(LocalRealmPlayer& p,const LocalRealmCommand
             const auto r=def->rewardChoices[cmd.bid-1];
             if(!addItem(candidate,c,r.itemId,r.count))return reject("Inventory full or reward unavailable; entire quest reward remains unclaimed");
         }
-        candidate.money+=def->money;experience(candidate,c,def->xp);
+        candidate.money+=def->money;experience(candidate,c,Impl::scaled(def->xp,impl_->tuning.experienceRate));
         for (const auto& reward : def->reputationRewards) {
             int32_t delta = reward.overrideValue ? reward.overrideValue / 100 : 0;
             if (!delta && reward.valueId && impl_->questRepRowsLoaded) {
@@ -7398,8 +7421,8 @@ bool LocalGameplay::tick(float seconds,const std::vector<LocalRealmPlayer*>& pla
                n.attackTimer<=0&&!stunned) {
                 n.attackTimer=2;
                 const auto outcome=localRollNpcAgainstPet(n,*summon,g.meleeRoll());
-                const uint32_t raw=uint32_t(std::min(uint64_t(1000000),
-                    uint64_t(def->damage)*(outcome==LocalMeleeOutcome::Critical?4:outcome==LocalMeleeOutcome::Crushing?3:2)/2));
+                const uint32_t raw=g.raidScaled(n.mapId,uint32_t(std::min(uint64_t(1000000),
+                    uint64_t(def->damage)*(outcome==LocalMeleeOutcome::Critical?4:outcome==LocalMeleeOutcome::Crushing?3:2)/2)));
                 g.damagePetByNpc(*summon,n,raw,players,outcome);
                 changed=true;
             }
@@ -7418,7 +7441,7 @@ bool LocalGameplay::tick(float seconds,const std::vector<LocalRealmPlayer*>& pla
             if(!stunned && n.attackTimer<=0 && localWithinMeleeRange(reach,localCreatureCombatReach(def),localCreatureCombatReach(content().npc(vehicle->entry)))) {
                 n.attackTimer=2;
                 const auto* armor=content().npc(vehicle->entry);
-                const auto damage=localArmorReducedDamage(std::min(def->damage,1000000u),armor?armor->armor:0,n.level);
+                const auto damage=g.raidScaled(n.mapId,localArmorReducedDamage(std::min(def->damage,1000000u),armor?armor->armor:0,n.level));
                 const auto effective=std::min(damage,vehicle->health);vehicle->health-=effective;vehicle->dead=!vehicle->health;
                 LocalCombatEvent event{0,n.guid,vehicle->guid,0,n.mapId,n.instanceId,damage,effective,0,LocalCombatEventKind::NpcMelee,vehicle->dead};
                 event.schoolMask=1;event.attackType=LocalCombatAttackType::Melee;g.emitCombatEvent(event,players);
@@ -7519,7 +7542,7 @@ bool LocalGameplay::tick(float seconds,const std::vector<LocalRealmPlayer*>& pla
             const auto meleeStats=localMeleeStats(*target,content());
             const auto outcome=localRollNpcMelee(n,*target,meleeStats,g.meleeRoll());
             const uint32_t armor=localMeleeArmor(*target,content());
-            const uint32_t raw=uint32_t(std::min(uint64_t(1000000),uint64_t(g.npcMeleeDamage(n,def->damage))*(outcome==LocalMeleeOutcome::Critical?4:outcome==LocalMeleeOutcome::Crushing?3:2)/2));
+            const uint32_t raw=g.raidScaled(n.mapId,uint32_t(std::min(uint64_t(1000000),uint64_t(g.npcMeleeDamage(n,def->damage))*(outcome==LocalMeleeOutcome::Critical?4:outcome==LocalMeleeOutcome::Crushing?3:2)/2)));
             const auto attempted=localMeleeAvoided(outcome)?0u:localFormDamage(*target,localArmorReducedDamage(g.npcDamageTakenByPlayer(*target,localIncomingDamageAfterTalents(*target,content(),raw),1),armor,n.level),true);
             const auto blocked=outcome==LocalMeleeOutcome::Block?std::min(attempted,meleeStats.blockValue):0;
             const uint32_t damage=localAbsorbDamage(*target,content(),attempted-blocked,1);

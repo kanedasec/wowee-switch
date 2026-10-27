@@ -748,6 +748,15 @@ void Application::updateLocalRealm(float deltaTime) {
             localRealmStatus("Realm name must be 1-48 letters, numbers, spaces, apostrophes, - or _.", true);
             return;
         }
+        if (request.mode == 1 && uiManager) {
+            const auto& settings = uiManager->getGameScreen().getSettingsPanel();
+            if (!localRealm_->setTuning({settings.pendingLocalExperienceRate,
+                                         settings.pendingLocalDropRate,
+                                         settings.pendingLocalRaidStrength})) {
+                localRealmStatus(localRealm_->error(), true);
+                return;
+            }
+        }
         // Bots are part of the world, so the choice made on the host screen is
         // applied before it starts rather than switched on inside it. A guest
         // never sets this: the host's bots reach it as ordinary players.

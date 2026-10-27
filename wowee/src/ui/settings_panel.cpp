@@ -1086,6 +1086,9 @@ constexpr FieldBinding kFieldBindings[] = {
     {.key = "autoloot",     .asBool = &SettingsPanel::pendingAutoLoot},
     {.key = "autosellgrey", .asBool = &SettingsPanel::pendingAutoSellGrey},
     {.key = "autorepair",   .asBool = &SettingsPanel::pendingAutoRepair},
+    {.key = "localxprate",       .asFloat = &SettingsPanel::pendingLocalExperienceRate},
+    {.key = "localdroprate",     .asFloat = &SettingsPanel::pendingLocalDropRate},
+    {.key = "localraidstrength", .asFloat = &SettingsPanel::pendingLocalRaidStrength},
 };
 
 /// The same, for the settings that belong to the chat panel rather than to

@@ -84,6 +84,13 @@ struct LocalMapDefinition {
     std::string name;
     bool instance() const { return instanceType == 1 || instanceType == 2; }
 };
+/// Host-authoritative tuning for the built-in realm. Defaults preserve the
+/// shipped rules exactly; external realms never construct LocalGameplay.
+struct LocalRealmTuning {
+    float experienceRate = 1.0f;
+    float dropRate = 1.0f;
+    float raidEnemyStrength = 1.0f;
+};
 struct LocalInstanceState {
     uint32_t id = 0, mapId = 0;
     // 0: legacy shared; human GUID: solo private; high-bit key: a session
@@ -2130,6 +2137,11 @@ public:
     ~LocalGameplay();
     LocalGameplay(LocalGameplay&&) noexcept;
     LocalGameplay& operator=(LocalGameplay&&) noexcept;
+    /// Install bounded local-realm tuning before play begins. Drop rate scales
+    /// guaranteed item quantities (never removes quest items); raid strength
+    /// applies only to maps identified as raids by Map.dbc.
+    bool setTuning(LocalRealmTuning tuning);
+    LocalRealmTuning tuning() const;
     // Authority persistence integration for single-target aura replacement.
     // Queried only on transfer/reset, never used as a combat actor roster.
     void setAuraOwnerProvider(std::function<std::vector<LocalRealmPlayer*>()> provider);

@@ -1,6 +1,23 @@
 #include "local_group_rewards_fixture.hpp"
 #include <iostream>
 int main() {
+    // Built-in realm tuning is bounded, opt-in and leaves the default rules at 1x.
+    LocalGameplay tuned;assert(tuned.setTuning({2.0f,3.0f,0.2f}));
+    assert(!tuned.setTuning({10.5f,1.0f,1.0f}));
+    assert(!tuned.setTuning({1.0f,0.5f,1.0f}));
+    assert(!tuned.setTuning({1.0f,1.0f,0.0f}));
+    tuned.useContent(rewardContent());auto tunedPlayer=rewardPlayer(101);
+    std::vector<LocalRealmPlayer*> tunedRoster{&tunedPlayer};rewardKill(tuned,tunedPlayer,tunedRoster,rewardNpc(110,101));
+    assert(tunedPlayer.xp==202);std::string tunedResult;
+    assert(tuned.execute(tunedPlayer,{LocalAction::Loot,110,0},tunedRoster,tunedResult));
+    assert(tunedPlayer.inventory.size()==1&&tunedPlayer.inventory[0].count==3);
+    auto raidContent=rewardContent();raidContent->npcs[0].health=100;
+    raidContent->spawns={{1,50,631,0,0,0,0}};
+    LocalGameplay raid;assert(raid.setTuning({1.0f,1.0f,0.2f}));std::string mapError;
+    assert(raid.setClientMaps({{631,2,25,2,"Icecrown Citadel"}},mapError));raid.useContent(raidContent);
+    auto raider=rewardPlayer(102);raider.mapId=631;raid.tick(0.5f,{&raider});
+    assert(raid.npcs().size()==1&&raid.npcs()[0].maxHealth==20&&raid.npcs()[0].health==20);
+
     LocalGameplay game;game.useContent(rewardContent());
     auto a=rewardPlayer(1),b=rewardPlayer(2),c=rewardPlayer(3),d=rewardPlayer(4),e=rewardPlayer(5),outsider=rewardPlayer(6);
     std::vector<LocalRealmPlayer*> all{&outsider,&e,&d,&c,&b,&a};
@@ -74,4 +91,5 @@ int main() {
     assert(takeMoney());assert(a.money==7 && !b.money); // Solo money is unchanged.
     std::cout<<"PASS group copper: 2/5-recipient conservation and remainders; items stay assigned; collection-time range/map/instance/life/offline gates; late join and dissolved-group rights; exact-cap and overflow atomicity; zero/small amounts; duplicate actors; solo/retry\n";
     std::cout<<"PASS group rewards: tag ownership; outsider/bot exclusion; two/five-member conserved XP; quest gates; map/instance/range/life/cap eligibility; round-robin and leader-order stability; full bags/owner/retry; bounded atomic roster; offline owner fallback restricted to death cohort; session clear\n";
+    std::cout<<"PASS local tuning: bounded XP/drop/raid controls; XP and item quantity scaling; Map.dbc raid-only health scaling\n";
 }
