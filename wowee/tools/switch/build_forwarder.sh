@@ -7,6 +7,7 @@ OUTPUT="${2:-$ROOT/out/switch/WoWee-forwarder.nsp}"
 NTON_BIN="${NTON:-nton}"
 KEYS="${NTON_KEYS:-$HOME/.switch/prod.keys}"
 TITLE_ID="01A57EE0C0DE1000"
+TITLE_ID_LOWER="${TITLE_ID,,}"
 VERSION="2.12.0"
 
 command -v "$NTON_BIN" >/dev/null || {
@@ -40,7 +41,7 @@ ln -s "$KEYS" "$KEY_WORK/prod.keys"
         --id "$TITLE_ID"
 )
 
-BUILT="$HOME/Desktop/NTON/WoWee v$VERSION by WoWee contributors [$TITLE_ID].nsp"
+BUILT="$HOME/Desktop/NTON/WoWee v$VERSION by WoWee contributors [$TITLE_ID_LOWER].nsp"
 [ -f "$BUILT" ] || { echo "nton completed but its expected NSP was not found: $BUILT" >&2; exit 1; }
 mkdir -p "$(dirname "$OUTPUT")"
 cp "$BUILT" "$OUTPUT"
