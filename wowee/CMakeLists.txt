@@ -1057,7 +1057,7 @@ if(WOWEE_SWITCH)
             $<TARGET_FILE:wowee>
             ${CMAKE_BINARY_DIR}/wowee.nro
             --nacp=${CMAKE_BINARY_DIR}/wowee.nacp
-            --icon=${DEVKITPRO}/libnx/default_icon.jpg
+            --icon=${CMAKE_CURRENT_SOURCE_DIR}/assets/switch/wowee-icon.jpg
             --romfs=${CMAKE_BINARY_DIR}/wowee-romfs.bin
         COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/tools/switch/patch_nro_romfs.py

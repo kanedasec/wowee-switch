@@ -293,6 +293,27 @@ applet mode caps the process at ~450 MB.
 Nothing prints to the screen; the diagnostic channel is
 [`boot.log`](#6-logs-and-troubleshooting).
 
+### Optional HOME-menu shortcut
+
+The NRO now carries WoWee's own icon. To put the same icon on the HOME menu,
+build a small NSP forwarder that launches the existing
+`sdmc:/switch/wowee/wowee.nro`:
+
+```sh
+# Install NTON from its official repository, then provide prod.keys dumped
+# from your own console. Never commit or share that file.
+export NTON_KEYS="$HOME/.switch/prod.keys"
+wowee/tools/switch/build_forwarder.sh
+```
+
+The script uses the stable homebrew title ID `01A57EE0C0DE1000` so rebuilding
+updates the same shortcut. Copy `wowee/out/switch/WoWee-forwarder.nsp` to the
+SD card and install it with your preferred homebrew installer. Building and
+copying the file does not register it on HOME by itself; installation must be
+confirmed on the console. The forwarder contains no game data and the NRO must
+remain at the path above. Custom NSPs also require signature patches compatible
+with the console firmware.
+
 ---
 
 ## 3. Run your own server (AzerothCore)
