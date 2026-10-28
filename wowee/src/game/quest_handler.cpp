@@ -2175,7 +2175,20 @@ void QuestHandler::handleGossipMessage(network::Packet& packet) {
     bool ok = owner_.getPacketParsers() ? owner_.getPacketParsers()->parseGossipMessage(packet, currentGossip_)
                                     : GossipMessageParser::parse(packet, currentGossip_);
     if (!ok) return;
-    if (questDetailsOpen_) return; // Don't reopen gossip while viewing quest
+
+    // A gossip packet is not always owned by a creature. Custom WotLK realms
+    // commonly implement menu items (the Warstorm Book of Powers is one) by
+    // returning SMSG_GOSSIP_MESSAGE with an item or player GUID. Keep the
+    // quest-details suppression for ordinary NPC chatter, but let an explicit
+    // non-NPC menu replace stale quest details. Otherwise the packet is parsed
+    // successfully and then discarded, which makes the item appear to do
+    // nothing.
+    const auto gossipOwner = owner_.getEntityManager().getEntity(currentGossip_.npcGuid);
+    const bool creatureOwned = gossipOwner && gossipOwner->getType() == ObjectType::UNIT;
+    if (questDetailsOpen_) {
+        if (creatureOwned) return;
+        dismissQuestDetails();
+    }
     gossipWindowOpen_ = true;
     // Gossip carries its text as an npc-text id, not inline, so any greeting
     // left over from a quest list belongs to a different window.
@@ -2204,6 +2217,26 @@ void QuestHandler::handleGossipMessage(network::Packet& packet) {
     }
 
     if (owner_.addonEventCallbackRef()) owner_.addonEventCallbackRef()("GOSSIP_SHOW", {});
+
+    // Blizzard's GossipFrame normally opens itself from GOSSIP_SHOW while a
+    // creature is selected. Item-originated menus have no NPC frame owner and
+    // some FrameXML builds update their data without making the panel visible.
+    // Explicitly present and refresh only that virtual-owner case. Selection
+    // still flows through SelectGossipOption and sends the original owner GUID
+    // and menu id back to the server.
+    if (!creatureOwned) {
+        LOG_WARNING("[WOWEE_GOSSIP] virtual owner=0x", std::hex,
+                    currentGossip_.npcGuid, std::dec,
+                    " options=", currentGossip_.options.size(),
+                    " quests=", currentGossip_.quests.size(),
+                    " forcing GossipFrame");
+        owner_.runInterfaceCommand(
+            "if GossipFrame then "
+              "if ShowUIPanel then ShowUIPanel(GossipFrame) end "
+              "if not GossipFrame:IsShown() then GossipFrame:Show() end "
+              "if GossipFrameUpdate then GossipFrameUpdate() end "
+            "end");
+    }
     owner_.closeVendor(); // Close vendor if gossip opens
 
     // Classify gossip quests and update quest log + overhead NPC markers.
