@@ -271,6 +271,26 @@ function ConsolePort:LoadSettings()
 				ConsolePort:OnNewBindings(set)
 			end
 		end
+		-- WoWee handheld remap (rev 8): ZR+B is the fourth ZR action slot.
+		-- It used to target EXTRAACTIONBUTTON1, which only exists during a
+		-- narrow set of encounters and has no binding script in ordinary play.
+		-- Saved characters retain that dead binding until it is migrated.
+		if set and (ConsolePortBindingSet.woweeBindRev or 0) < 8 then
+			if type(set.CP_R_DOWN) == 'table' then
+				set.CP_R_DOWN['CTRL-'] = 'MULTIACTIONBAR1BUTTON4'
+			end
+			ConsolePortBindingSet.woweeBindRev = 8
+			db.Bindings = set
+			if ConsolePortButtonHandler and ClearOverrideBindings then
+				ClearOverrideBindings(ConsolePortButtonHandler)
+			end
+			if ConsolePort.LoadBindingSet then
+				ConsolePort:LoadBindingSet(set, true)
+			end
+			if ConsolePort.OnNewBindings then
+				ConsolePort:OnNewBindings(set)
+			end
+		end
 	end
 
 	-- The utility ring is built by SetupUtilityRing, which nothing on the

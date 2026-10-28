@@ -10581,31 +10581,21 @@ bool LuaEngine::dispatchBindingKey(int sdlKeycode, bool shift, bool ctrl,
     // multi-bars MULTIACTIONBAR1..4BUTTONn).
     {
         const int slot = actionSlotForBindingCommand(command);
-        if (slot >= 1 && slot <= 120 && down) {
-            // The main bar is taken over exactly as before. The multi-bars are
-            // taken over ONLY when something is on the cursor - there the press
-            // means "place this here" - because their use path is the client's
-            // script handler: with nothing carried a multi-bar press falls
-            // straight through, so casting/using those slots is unchanged.
-            bool takeOver = command.rfind("ACTIONBUTTON", 0) == 0;
-            if (!takeOver) {
-                lua_getglobal(L_, "GetCursorInfo");
-                if (lua_isfunction(L_, -1)) {
-                    if (lua_pcall(L_, 0, 1, 0) == 0) { takeOver = !lua_isnil(L_, -1); lua_pop(L_, 1); }
-                    else lua_pop(L_, 1);
-                } else {
-                    lua_pop(L_, 1);
-                }
-            }
-            if (takeOver) {
-                outcome = "action";
+        if (slot >= 1 && slot <= 120) {
+            // FrameXML's main-bar bindings have a native client path, but its
+            // MultiActionButtonDown/Up path depends on the four Blizzard
+            // multi-bar frames. ConsolePort deliberately unregisters and hides
+            // those frames, so falling through to their binding script lights
+            // the handheld button and sends no action to the server. Own every
+            // mapped action slot here instead. This is also the one path shared
+            // by remote and local realms: UseAction performs the realm split.
+            outcome = down ? "action" : "action-release";
+            if (down) {
                 // With something on the cursor a slot press PLACES it there -
                 // the same thing a mouse click on the slot does - but only into
                 // an EMPTY slot. Overwriting silently replaced the operator's Y
                 // (attack) the first time they tried this, and there is no
                 // reorder UI yet, so an occupied slot is left alone and says so.
-                // With nothing carried the slot is used exactly as before (the
-                // main bar only; an empty cursor never takes over a multi-bar).
                 executeString(
                     "local s=" + std::to_string(slot) + " "
                     "if GetCursorInfo and GetCursorInfo() then "
@@ -10615,9 +10605,11 @@ bool LuaEngine::dispatchBindingKey(int sdlKeycode, bool shift, bool ctrl,
                         "end "
                       "elseif PlaceAction then PlaceAction(s) end "
                     "elseif UseAction then UseAction(s) end");
-                if (traceKey) LOG_WARNING("[WOWEE_KEYTRACE] key=", traceRaw, " cmd=", command, " -> ", outcome);
-                return true;
             }
+            // Consume releases too. Letting a release fall through would run
+            // the same dead MultiActionButton script after the direct press.
+            if (traceKey) LOG_WARNING("[WOWEE_KEYTRACE] key=", traceRaw, " cmd=", command, " -> ", outcome);
+            return true;
         }
     }
 

@@ -81,7 +81,7 @@ db.Controllers.SWITCH = {
 		['CP_R_DOWN'] = {
 			['']		 	= 'CANCELALL',
 			['SHIFT-'] 		= 'ACTIONBUTTON9',
-			['CTRL-']  		= 'EXTRAACTIONBUTTON1',
+			['CTRL-']  		= 'MULTIACTIONBAR1BUTTON4',
 			['CTRL-SHIFT-'] = 'MULTIACTIONBAR1BUTTON9',
 		},
 		['CP_R_LEFT'] = {
