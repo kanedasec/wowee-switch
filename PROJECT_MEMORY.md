@@ -92,10 +92,18 @@ cmake --build build-switch --parallel 4
 - Regression tests:
   `python3 wowee/tools/tests/switch_action_dispatch_test.py` and
   `python3 wowee/tools/tests/item_gossip_framexml_test.py`.
-- Both fixes compile and link in the Switch build. Final packaging, TLS scan,
-  FTP deployment, and on-device confirmation must be recorded below when done.
+- Both fixes compile/link and package in the Switch build. The staged and built
+  NROs were byte-identical, and `verify_tls_access.py` passed against the linked
+  ELF.
+- Deployed on 2026-10-27 to `192.168.0.55`: only
+  `/switch/wowee/wowee.nro` and the two modified ConsolePort files were
+  replaced. All three installed files were read back over FTP and matched their
+  local SHA-256 hashes. NRO SHA-256:
+  `8edea3b13aea770a864be43c10a9e4abe37106c4f839d3501c3e95a7352c9d6a`.
+- Previous deployed versions are recoverable at the same paths with suffix
+  `.pre-zr-gossip-20261027.bak`. No other SD-card path was modified.
 
-## Pending hardware checks
+## Pending on-device behavior checks
 
 - Confirm ZR+Y/X/A/B use the four actions shown in slots 61..64 and do not drop
   the current target.
