@@ -1,10 +1,10 @@
 # Findings ledger — wowee-switch hardware porting
 
-Everything here was measured on the console at `192.168.2.44`. This file exists
-so that measurements are not repeated and ruled-out theories are not re-tried.
-Read it before debugging a new symptom.
+Everything here was measured on the same console (formerly `192.168.2.44`, now
+`192.168.0.55`). This file exists so that measurements are not repeated and
+ruled-out theories are not re-tried. Read it before debugging a new symptom.
 
-Last updated: 2026-10-13 (crosshair targeting, update cost, layout gate, loot, vendor).
+Last updated: 2026-10-27 (external action slots and item-origin gossip).
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-10-13 (crosshair targeting, update cost, layout gate, loot, v
 
 | | |
 |---|---|
-| Console | `192.168.2.44`, FTP port **5000**, anonymous |
+| Console | `192.168.0.55`, FTP port **5000**, anonymous |
 | FTP server | mtheall `ftpd` homebrew (`/switch/ftpd/ftpd.nro`), not sys-ftpd |
 | Atmosphere | 1.9.x |
 | GPU | `NVIDIA Tegra X1 (NVK gm20b)` |
@@ -1557,3 +1557,26 @@ FrameXML arrow to hide.
 `getConfigRoot()` returns `$HOME/.wowps` = `sdmc:/wowps/wowps/.wowps`, and
 `createDirectories()` creates only `{logs,cache,saves,config,tmp}` — never
 `.wowps`. Settings changed before the first login are silently lost.
+
+## 2026-10-27 external realm: ZR action tiers and item-origin gossip
+
+### ZR skills reached dead FrameXML scripts
+The console trace proved the modifier and bindings were correct: ZR became
+CTRL and its face buttons resolved to `MULTIACTIONBAR1BUTTON1..3`, but dispatch
+ended in `-> script` and no cast followed. ConsolePort deliberately hides and
+unregisters Blizzard's four multi-action frames, so their binding scripts have
+no live button to click. `dispatchBindingKey` now owns all mapped slots 1..120
+and calls `UseAction` directly on press, with release consumed. ZR+B's old
+`EXTRAACTIONBUTTON1` mapping was independently dead outside special encounters;
+binding revision 8 migrates it to multi-action button 4 (slot 64). Commit:
+`ceb25cd`.
+
+### Book of Powers reached Warstorm but its menu was never presented
+Three uses each received a valid `SMSG_GOSSIP_MESSAGE` (wire `0x17d`, 958
+bytes), ruling out item use and server scripting. Warstorm implements the book
+as gossip owned by an item/player GUID rather than a creature. The client could
+discard that packet behind the quest-detail guard, and FrameXML did not reliably
+make a non-NPC gossip panel visible. Non-creature gossip now supersedes stale
+quest details, fires the normal `GOSSIP_SHOW`, then explicitly shows and updates
+`GossipFrame`. Option clicks still use `SelectGossipOption` and the server's
+original owner/menu/option identifiers. Commit: `9afc6ac`.

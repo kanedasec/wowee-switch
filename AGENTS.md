@@ -4,10 +4,12 @@ Working notes for anyone (human or agent) driving this project. Facts here were
 verified against the live console on **2026-10-13**; anything that changes
 (address, Atmosphere version, where logs land) should be updated here first.
 
-**Read [docs/FINDINGS.md](docs/FINDINGS.md) before debugging anything.** It is
-the ledger of what has been measured, what has been ruled out, and which fixes
-exist and why — written so a measurement is never repeated and a ruled-out
-theory is never re-tried.
+**Read [PROJECT_MEMORY.md](PROJECT_MEMORY.md) and
+[docs/FINDINGS.md](docs/FINDINGS.md) before debugging anything.** The first is
+the shared Codex/Claude handoff for this operator and fork; the second is the
+detailed ledger of what has been measured, what has been ruled out, and which
+fixes exist and why. Update the shared memory whenever an implementation or an
+operator-facing decision changes.
 
 ## What this is
 
@@ -37,7 +39,7 @@ build locally → FTP the new .nro to the card → close & relaunch the title
 → reproduce on the pad → FTP the logs back → read, fix, repeat
 ```
 
-**Console: `192.168.2.44`, FTP port 5000, anonymous login.** The server is the
+**Console: `192.168.0.55`, FTP port 5000, anonymous login.** The server is the
 mtheall `ftpd` homebrew (`/switch/ftpd/ftpd.nro`), *not* sys-ftpd, and it only
 serves while it is running. Atmosphere 1.9.x. This host has no `lftp` or
 `curlftpfs`, so everything below goes through `python3`'s `ftplib` — verified
@@ -66,7 +68,7 @@ python3 - <<'PY'
 import ftplib, pathlib
 SRC = pathlib.Path("wowee/out/switch/switch/wowee")
 DST = "/switch/wowee"
-f = ftplib.FTP(); f.connect("192.168.2.44", 5000, timeout=30); f.login(); f.set_pasv(True)
+f = ftplib.FTP(); f.connect("192.168.0.55", 5000, timeout=30); f.login(); f.set_pasv(True)
 def mkdir(p):
     try: f.mkd(p)
     except ftplib.error_perm: pass
@@ -92,7 +94,7 @@ RUN=logs/console/$(date +%Y-%m-%d_%H%M)
 python3 - "$RUN" <<'PY'
 import ftplib, pathlib, sys
 OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
-f = ftplib.FTP(); f.connect("192.168.2.44", 5000, timeout=30); f.login()
+f = ftplib.FTP(); f.connect("192.168.0.55", 5000, timeout=30); f.login()
 for remote, local in [("/wowps/wowps/logs/boot.log", "boot.log"),
                       ("/wowps/wowps/logs/wowps.log", "wowps.log")]:
     with open(OUT / local, "wb") as fh: f.retrbinary(f"RETR {remote}", fh.write)
